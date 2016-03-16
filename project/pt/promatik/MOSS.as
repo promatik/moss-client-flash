@@ -72,6 +72,9 @@ package pt.promatik
 		public function get invokeOnAllSignal():Signal { return _invokeOnAllSignal; }
 		public function get messageSignal():Signal { return _messageSignal; }
 		
+		public static const SOCKET_TIMEOUT_DISABLED:int = 0;
+		public static const SOCKET_TIMEOUT_DEFAULT:int = 12200;
+		
 		// --------------------
 		// Constructor
 		// --------------------
@@ -87,7 +90,7 @@ package pt.promatik
 			init();
 		}
 		
-		public function set socketTimeOutTimer(pingDelay:uint)
+		public function set socketTimeOutTimer(pingDelay:uint):void
 		{
 			if (!_pingTimer)
 			{
@@ -123,7 +126,7 @@ package pt.promatik
 		{
 			_socketConnected = _connected = false;
 			if(_socket) {
-				_socket.close();
+				if (_socket.connected) _socket.close();
 				_socket.removeEventListener(Event.CONNECT, onConnect);
 				_socket.removeEventListener(Event.CLOSE, onClose);
 				_socket.removeEventListener(IOErrorEvent.IO_ERROR, onError);
@@ -233,9 +236,14 @@ package pt.promatik
 			sendMessage("invokeOnAll", callback, command, values ? stringify(values) : "");
 		}
 		
+		public function setSocketTimeOut(milliseconds:int, callback:Function = null):void
+		{
+			sendMessage("setTimeOut", callback, milliseconds);
+		}
+		
 		public function call(command:String, values:* = null, callback:Function = null):void
 		{
-			if (command.match("connect|disconnect|updateStatus|getUser|getUsers|getUsersCount|invoke|invokeOnRoom|invokeOnAll|ping|pong"))
+			if (command.match("connect|disconnect|updateStatus|getUser|getUsers|getUsersCount|invoke|invokeOnRoom|invokeOnAll|setTimeOut|ping|pong"))
 				throw new Error("The command '" + command + "' is reserved.");
 			
 			sendMessage(command, callback, stringify(values));
@@ -320,7 +328,7 @@ package pt.promatik
 							callback();
 						break;
 					case "disconnected": 
-						_connected = false;
+						_connected = _socketConnected = false;
 						loggedOutSignal.dispatch();
 						if (callback != null)
 							callback();
@@ -369,6 +377,10 @@ package pt.promatik
 						break;
 					case "invokeOnAll": 
 						invokeOnAllSignal.dispatch(reqStatus);
+						if (callback != null)
+							callback(reqStatus);
+						break;
+					case "setTimeOut": 
 						if (callback != null)
 							callback(reqStatus);
 						break;
