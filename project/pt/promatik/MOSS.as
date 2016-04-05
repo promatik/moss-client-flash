@@ -287,9 +287,14 @@ package pt.promatik
 			sendMessage("setTimeOut", callback, milliseconds);
 		}
 		
+		public function log(values:*):void
+		{
+			sendMessage("log", null, (typeof(values) == "string" ? values : stringify(values)));
+		}
+		
 		public function call(command:String, values:* = null, callback:Function = null):void
 		{
-			if (command.match("connect|disconnect|updateStatus|getUser|getUsers|getUsersCount|invoke|invokeOnRoom|invokeOnAll|setTimeOut|ping|pong|randomPlayer|setData"))
+			if (command.match("connect|disconnect|updateStatus|getUser|getUsers|getUsersCount|invoke|invokeOnRoom|invokeOnAll|setTimeOut|ping|pong|randomPlayer|setData|log"))
 				throw new Error("The command '" + command + "' is reserved.");
 			
 			sendMessage(command, callback, stringify(values));
@@ -436,7 +441,7 @@ package pt.promatik
 						break;
 					case "setTimeOut": 
 						if (callback != null)
-							callback(reqStatus);
+							callback();
 						break;
 					case "randomPlayer": 
 						var user:UserVO = null;
