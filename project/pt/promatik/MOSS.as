@@ -106,7 +106,7 @@ package pt.promatik
 			init();
 		}
 		
-		public function set socketTimeOutTimer(pingDelay:uint)
+		public function set socketTimeOutTimer(pingDelay:uint):void
 		{
 			if (!_pingTimer)
 			{
@@ -370,6 +370,7 @@ package pt.promatik
 				var callback:Function = _reqCallback[request];
 				
 				var reqStatus:Boolean;
+				var user:UserVO = new UserVO();
 				switch (action)
 				{
 					case "connected": 
@@ -397,7 +398,6 @@ package pt.promatik
 							callback(_availability);
 						break;
 					case "user": 
-						var user:UserVO = new UserVO();
 						user.parse(message);
 						userSignal.dispatch(user);
 						if (callback != null)
@@ -444,7 +444,7 @@ package pt.promatik
 							callback();
 						break;
 					case "randomPlayer": 
-						var user:UserVO = null;
+						user = null;
 						if(message != "null") {
 							user = new UserVO();
 							user.parse(message);
@@ -463,13 +463,18 @@ package pt.promatik
 						doubleLoginSignal.dispatch();
 						loggedOutSignal.dispatch();
 						break;
+					case "log": 
+						reqStatus = message == "ok";
+						if (callback != null)
+							callback(reqStatus);
+						break;
 					case "ping": 
 						sendMessage("pong", null);
 						break;
 					case "pong": 
 						break;
 					default: 
-						messageSignal.dispatch(message ? parse(message) : "", action, from);
+						messageSignal.dispatch(message && message != "null" ? parse(message) : {}, action, from);
 				}
 				
 				delete _reqCallback[request];
