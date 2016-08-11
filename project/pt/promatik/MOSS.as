@@ -1,6 +1,8 @@
 package pt.promatik
 {
+	import pt.promatik.utils.StringUtils;
 	import pt.promatik.vo.UserVO;
+	
 	import flash.events.Event;
 	import flash.events.IOErrorEvent;
 	import flash.events.ProgressEvent;
@@ -13,7 +15,7 @@ package pt.promatik
 	import idv.cjcat.signals.Signal;
 	
 	/**
-	 * MOSS v1.1.0
+	 * MOSS v1.1.2
 	 * @author Toni Almeida
 	 */
 	public class MOSS
@@ -79,6 +81,10 @@ package pt.promatik
 		public static const MESSAGE_DELIMITER:String = "&!";
 		public static const SOCKET_TIMEOUT_DISABLED:int = 0;
 		public static const SOCKET_TIMEOUT_DEFAULT:int = 12200;
+		
+		public static const GET_USERS_ALL:int = 0;
+		public static const GET_USERS_AVAILABLE:int = 1;
+		public static const GET_USERS_BUSY:int = 2;
 		
 		// --------------------
 		// Constructor
@@ -217,16 +223,22 @@ package pt.promatik
 			sendMessage("getUser", callback, id, room);
 		}
 		
-		public function getUsers(room:String = null, callback:Function = null):void
+		public function getUsers(room:String, limit:int, page:int, available:int, search:Object, callback:Function = null):void
 		{
 			if (!room)
 				room = _room;
-			sendMessage("getUsers", callback, room);
+			
+			var searchTerms:String = "";
+			for (var key:String in search) {
+				searchTerms += key + "," + StringUtils.b8encode(search[key]);
+			}
+			
+			sendMessage("getUsers", callback, room, limit, page, available, searchTerms);
 		}
 		
 		public function setData(key:String, value:String, callback:Function = null):void
 		{
-			sendMessage("setData", callback, key, value);
+			sendMessage("setData", callback, key, StringUtils.b8encode(value));
 		}
 		
 		public function setDataMulti(args:Object):void
@@ -267,19 +279,19 @@ package pt.promatik
 		{
 			if (!room)
 				room = _room;
-			sendMessage("invoke", callback, id, room, command, values ? stringify(values) : "");
+			sendMessage("invoke", callback, id, room, command, values ? StringUtils.stringify(values) : "");
 		}
 		
 		public function invokeOnRoom(command:String, values:* = null, room:String = null, callback:Function = null):void
 		{
 			if (!room)
 				room = _room;
-			sendMessage("invokeOnRoom", callback, room, command, values ? stringify(values) : "");
+			sendMessage("invokeOnRoom", callback, room, command, values ? StringUtils.stringify(values) : "");
 		}
 		
 		public function invokeOnAll(command:String, values:* = null, callback:Function = null):void
 		{
-			sendMessage("invokeOnAll", callback, command, values ? stringify(values) : "");
+			sendMessage("invokeOnAll", callback, command, values ? StringUtils.stringify(values) : "");
 		}
 		
 		public function setSocketTimeOut(milliseconds:int, callback:Function = null):void
@@ -289,7 +301,7 @@ package pt.promatik
 		
 		public function log(values:*):void
 		{
-			sendMessage("log", null, (typeof(values) == "string" ? values : stringify(values)));
+			sendMessage("log", null, (typeof(values) == "string" ? values : StringUtils.stringify(values)));
 		}
 		
 		public function call(command:String, values:* = null, callback:Function = null):void
@@ -297,7 +309,7 @@ package pt.promatik
 			if (command.match("connect|disconnect|updateStatus|getUser|getUsers|getUsersCount|invoke|invokeOnRoom|invokeOnAll|setTimeOut|ping|pong|randomPlayer|setData|log"))
 				throw new Error("The command '" + command + "' is reserved.");
 			
-			sendMessage(command, callback, stringify(values));
+			sendMessage(command, callback, StringUtils.stringify(values));
 		}
 		
 		// --------------------
@@ -474,21 +486,11 @@ package pt.promatik
 					case "pong": 
 						break;
 					default: 
-						messageSignal.dispatch(message && message != "null" ? parse(message) : {}, action, from);
+						messageSignal.dispatch(message && message != "null" ? StringUtils.parse(message) : {}, action, from);
 				}
 				
 				delete _reqCallback[request];
 			}
-		}
-		
-		private function stringify(values:*):String
-		{
-			return JSON.stringify(values);
-		}
-		
-		private function parse(values:String):Object
-		{
-			return JSON.parse(values);
 		}
 	}
 }
